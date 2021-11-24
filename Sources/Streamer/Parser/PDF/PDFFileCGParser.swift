@@ -13,8 +13,8 @@ import Foundation
 import UIKit
 import R2Shared
 
-
-final class PDFFileCGParser: PDFFileParser, Loggable {
+//final class PDFFileCGParser: PDFFileParser, Loggable
+final class PDFFileCGParser: Loggable {
 
     private var stream: SeekableInputStream
     

@@ -14,10 +14,10 @@ protocol EPUBSpreadViewDelegate: AnyObject {
 
     /// Called when the user tapped on the spread contents.
     func spreadView(_ spreadView: EPUBSpreadView, didTapAt point: CGPoint)
-    
+
     /// Called when the user tapped on an external link.
     func spreadView(_ spreadView: EPUBSpreadView, didTapOnExternalURL url: URL)
-    
+
     /// Called when the user tapped on an internal link.
     func spreadView(_ spreadView: EPUBSpreadView, didTapOnInternalLink href: String, clickEvent: ClickEvent?)
 
@@ -29,7 +29,7 @@ protocol EPUBSpreadViewDelegate: AnyObject {
 
     /// Called when the pages visible in the spread changed.
     func spreadViewPagesDidChange(_ spreadView: EPUBSpreadView)
-    
+
     /// Called when the spread view needs to present a view controller.
     func spreadView(_ spreadView: EPUBSpreadView, present viewController: UIViewController)
 }
@@ -40,7 +40,7 @@ class EPUBSpreadView: UIView, Loggable, PageView {
     let publication: Publication
     let spread: EPUBSpread
     private(set) var focusedResource: Link?
-    
+
     let resourcesURL: URL
     let webView: WebView
 
@@ -52,7 +52,7 @@ class EPUBSpreadView: UIView, Loggable, PageView {
 
     /// If YES, the content will be faded in once loaded.
     let animatedLoad: Bool
-    
+
     let contentInset: [UIUserInterfaceSizeClass: EPUBContentInsets]
 
     weak var activityIndicatorView: UIActivityIndicatorView?
@@ -78,17 +78,17 @@ class EPUBSpreadView: UIView, Loggable, PageView {
         self.contentInset = contentInset
 
         super.init(frame: .zero)
-        
+
         isOpaque = false
         backgroundColor = .clear
-        
+
         webView.frame = bounds
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         addSubview(webView)
         setupWebView()
 
         addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(didTapBackground)))
-        
+
         for script in scripts {
             webView.configuration.userContentController.addUserScript(script)
         }
@@ -107,15 +107,15 @@ class EPUBSpreadView: UIView, Loggable, PageView {
 
     func setupWebView() {
         scrollView.alpha = 0
-        
+
         webView.backgroundColor = UIColor.clear
         scrollView.backgroundColor = UIColor.clear
-        
+
         webView.allowsBackForwardNavigationGestures = false
 
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.showsVerticalScrollIndicator = false
-        
+
         if #available(iOS 11.0, *) {
             // Prevents the pages from jumping down when the status bar is toggled
             scrollView.contentInsetAdjustmentBehavior = .never
@@ -137,7 +137,7 @@ class EPUBSpreadView: UIView, Loggable, PageView {
 
     override func didMoveToSuperview() {
         super.didMoveToSuperview()
-        
+
         if superview == nil {
             disableJSMessages()
             // Fixing an iOS 9 bug by explicitly clearing scrollView.delegate before deinitialization
@@ -147,7 +147,7 @@ class EPUBSpreadView: UIView, Loggable, PageView {
             scrollView.delegate = self
         }
     }
-    
+
     func loadSpread() {
         fatalError("loadSpread() must be implemented in subclasses")
     }
@@ -199,7 +199,7 @@ class EPUBSpreadView: UIView, Loggable, PageView {
             return
         }
         lastClick = clickEvent
-        
+
         // Ignores taps on interactive elements, or if the script prevents the default behavior.
         if !clickEvent.defaultPrevented && clickEvent.interactiveElement == nil {
             let point = convertPointToNavigatorSpace(clickEvent.point)
@@ -233,12 +233,12 @@ class EPUBSpreadView: UIView, Loggable, PageView {
         spreadDidLoad()
         delegate?.spreadViewDidLoad(self)
     }
-    
+
     /// To be overriden to customize the behavior after the spread is loaded.
     func spreadDidLoad() {
         showSpread()
     }
-    
+
     func showSpread() {
         activityIndicatorView?.stopAnimating()
         UIView.animate(withDuration: animatedLoad ? 0.3 : 0, animations: {
@@ -270,7 +270,7 @@ class EPUBSpreadView: UIView, Loggable, PageView {
         frame.origin = convertPointToNavigatorSpace(frame.origin)
         delegate?.spreadView(self, selectionDidChange: text, frame: frame)
     }
-    
+
     /// Called when the user hit the Share item in the selection context menu.
     @objc func shareSelection(_ sender: Any?) {
         guard let shareViewController = editingActions.makeShareViewController(from: webView) else {
@@ -284,10 +284,10 @@ class EPUBSpreadView: UIView, Loggable, PageView {
     func applyUserSettingsStyle() {
         assert(Thread.isMainThread, "User settings must be updated from the main thread")
     }
-    
-    
+
+
     /// MARK: - Location and progression.
-    
+
     /// Current progression in the resource with given href.
     func progression(in href: String) -> Double {
         // To be overridden in subclasses if the resource supports a progression.
@@ -297,11 +297,11 @@ class EPUBSpreadView: UIView, Loggable, PageView {
     func go(to location: PageLocation, completion: (() -> Void)?) {
         fatalError("go(to:completion:) must be implemented in subclasses")
     }
-    
+
     enum Direction: CustomStringConvertible {
         case left
         case right
-        
+
         var description: String {
             switch self {
             case .left: return "left"
@@ -309,14 +309,14 @@ class EPUBSpreadView: UIView, Loggable, PageView {
             }
         }
     }
-    
+
     func go(to direction: Direction, animated: Bool = false, completion: @escaping () -> Void = {}) -> Bool {
         // The default implementation of a spread view considers that its content is entirely visible on screen.
         return false
     }
 
     // MARK: - Scripts
-    
+
     private static let gesturesScript = loadScript(named: "gestures")
     private static let utilsScript = loadScript(named: "utils")
 
@@ -325,12 +325,16 @@ class EPUBSpreadView: UIView, Loggable, PageView {
             .url(forResource: "Scripts/\(name)", withExtension: "js")
             .flatMap { try? String(contentsOf: $0) }!
     }
-    
+//    class func loadScript(named name: String) -> String {
+//        return Bundle.module.url(forResource: "\(name)", withExtension: "js", subdirectory: "Assets/Static/scripts")
+//            .flatMap { try? String(contentsOf: $0) }!
+//    }
+
     func loadResource(at path: String) -> String {
-        return (resourcesURL?.appendingPathComponent(path))
-            .flatMap { try? String(contentsOf: $0) }!
+        return (try? String(contentsOf: resourcesURL.appendingPathComponent(path)))!
+         //return (resourcesURL.appendingPathComponent(path)).flatMap { try? String(contentsOf: $0) }!
     }
-    
+
     func makeScripts() -> [WKUserScript] {
         return [
             WKUserScript(source: EPUBSpreadView.gesturesScript, injectionTime: .atDocumentStart, forMainFrameOnly: false),
@@ -340,7 +344,7 @@ class EPUBSpreadView: UIView, Loggable, PageView {
     }
 
     // MARK: - JS Messages
-    
+
     private var JSMessages: [String: (Any) -> Void] = [:]
     private var JSMessagesEnabled = false
 
@@ -350,13 +354,13 @@ class EPUBSpreadView: UIView, Loggable, PageView {
             log(.error, "JS message already registered: \(name)")
             return
         }
-        
+
         JSMessages[name] = handler
         if JSMessagesEnabled {
             webView.configuration.userContentController.add(self, name: name)
         }
     }
-    
+
     /// To override in subclasses if needed.
     func registerJSMessages() {
         registerJSMessage(named: "log") { [weak self] in self?.didLog($0) }
@@ -366,7 +370,7 @@ class EPUBSpreadView: UIView, Loggable, PageView {
         registerJSMessage(named: "selectionChanged") { [weak self] in self?.selectionDidChange($0) }
         registerJSMessage(named: "decorationActivated") { [weak self] in self?.decorationDidActivate($0) }
     }
-    
+
     /// Add the message handlers for incoming javascript events.
     private func enableJSMessages() {
         guard !JSMessagesEnabled else {
@@ -377,7 +381,7 @@ class EPUBSpreadView: UIView, Loggable, PageView {
             webView.configuration.userContentController.add(self, name: name)
         }
     }
-    
+
     // Removes message handlers (preventing strong reference cycle).
     private func disableJSMessages() {
         guard JSMessagesEnabled else {
@@ -410,11 +414,11 @@ class EPUBSpreadView: UIView, Loggable, PageView {
         delegate?.spreadView(self, didActivateDecoration: decorationId, inGroup: groupName, frame: frame, point: point)
     }
 
-    
+
     // MARK: - Accessibility
-    
+
     private var isVoiceOverRunning = UIAccessibility.isVoiceOverRunning
-    
+
     @objc private func voiceOverStatusDidChange() {
         // Avoids excessive settings refresh when the status didn't change.
         guard isVoiceOverRunning != UIAccessibility.isVoiceOverRunning else {
@@ -423,14 +427,6 @@ class EPUBSpreadView: UIView, Loggable, PageView {
         isVoiceOverRunning = UIAccessibility.isVoiceOverRunning
         // Scroll mode will be activated if VoiceOver is on
         applyUserSettingsStyle()
-    }
-
-    
-    // MARK: - Scripts
-    
-    class func loadScript(named name: String) -> String {
-        return Bundle.module.url(forResource: "\(name)", withExtension: "js", subdirectory: "Assets/Static/scripts")
-            .flatMap { try? String(contentsOf: $0) }!
     }
 }
 
@@ -465,7 +461,7 @@ extension EPUBSpreadView: WKNavigationDelegate {
                 } else {
                     delegate?.spreadView(self, didTapOnExternalURL: url)
                 }
-                
+
                 policy = .cancel
             }
         }
@@ -475,11 +471,11 @@ extension EPUBSpreadView: WKNavigationDelegate {
 }
 
 extension EPUBSpreadView: UIScrollViewDelegate {
-    
+
     func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
         scrollView.isUserInteractionEnabled = true
     }
-    
+
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
         webView.clearSelection()
     }
@@ -491,7 +487,7 @@ extension EPUBSpreadView: UIScrollViewDelegate {
 }
 
 extension EPUBSpreadView: WKUIDelegate {
-    
+
     func webView(_ webView: WKWebView, shouldPreviewElement elementInfo: WKPreviewElementInfo) -> Bool {
         // Preview allowed only if the link is not internal
         return (elementInfo.linkURL?.host != publication.baseURL?.host)
@@ -514,12 +510,12 @@ private extension EPUBSpreadView {
             createActivityIndicator(style: .gray)
         }
     }
-    
+
     func createActivityIndicator(style: UIActivityIndicatorView.Style) {
         guard activityIndicatorView?.style != style else {
             return
         }
-        
+
         activityIndicatorView?.removeFromSuperview()
         let view = UIActivityIndicatorView(style: style)
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -538,14 +534,14 @@ struct ClickEvent {
     let point: CGPoint
     let targetElement: String
     let interactiveElement: String?
-    
+
     init(dict: [String: Any]) {
         self.defaultPrevented = dict["defaultPrevented"] as? Bool ?? false
         self.point = CGPoint(x: dict["x"] as? Double ?? 0, y: dict["y"] as? Double ?? 0)
         self.targetElement = dict["targetElement"] as? String ?? ""
         self.interactiveElement = dict["interactiveElement"] as? String
     }
-    
+
     init?(json: Any?) {
         guard let dict = json as? [String: Any] else {
             return nil
